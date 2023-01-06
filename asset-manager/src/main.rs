@@ -19,6 +19,7 @@ mod errors;
 use crate::{user::User, models::AppEnv, app::App};
 
 const ASSETS_FILEPATH: &str = "./files/dev/user.json";
+const MARKET_FILEPATH: &str = "./files/dev/market.json";
 
 // use aes_gcm::{
 //     aead::{Aead, KeyInit, OsRng},
@@ -40,6 +41,10 @@ fn main() {
 
     let mut app = App::new(user);
     app.import_user_file(ASSETS_FILEPATH);
+
+    // app.update_market(MARKET_FILEPATH);
+
+    app.dashboard();
 
     // app.login(user);
     // assert!(user.is_valid_password("admin123"));

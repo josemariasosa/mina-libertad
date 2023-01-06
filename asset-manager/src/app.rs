@@ -48,7 +48,7 @@ impl App {
                 asset["asset_type"]["data"].clone()
             );
 
-            let new_asset = Asset::new(
+            let mut new_asset = Asset::new(
                 self.next_asset_id,
                 fund.clone(),
                 asset_type
@@ -64,10 +64,10 @@ impl App {
                     .to_string()
                     .parse::<u128>()
                     .unwrap();
-                let currency = FiatCurrency::from_str(asset["buy"]["transaction"]["fiat_cash"]["amount"].as_str().unwrap());
-                new_asset.purchase(
-                    
-                    settled_at, amount, currency)
+                let currency = FiatCurrency::from_str(
+                    asset["buy"]["transaction"]["fiat_cash"]["currency"].as_str().unwrap()
+                ).unwrap();
+                new_asset.purchase(settled_at, amount, currency);
             }
             self.assets.push(new_asset);
         }
@@ -88,12 +88,26 @@ impl App {
 
 
 
-        println!("{:?} 👺", self.assets)
+        // println!("{:?} 👺", self.assets)
     
         // let res = Vec::<Asset>::new();
         // for asset in assets.members() {
         //     let fund = Fund::new(asset["fund"]["name"].to_string());
         //     let new = Asset::new(self.next_asset_id, fund, asset_type)
         // }
+    }
+
+    /// Asset Id | Type | Entrance | Now
+    fn view_asset_eval(&self) {
+        let assets = self.assets.iter().map(|asset| asset.evaluate(FiatCurrency::MXN));
+
+        println!("FRIDAY -> print the evaluated assets: {:?}", assets);
+
+    }
+
+    pub(crate) fn dashboard(&self) {
+        self.view_asset_eval();
+        // self.view_entrance_point();
+
     }
 }

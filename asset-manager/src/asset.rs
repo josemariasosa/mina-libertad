@@ -1,7 +1,9 @@
+use std::fmt;
+
 // use std::fmt;
 use json::JsonValue;
 use serde::{Serialize, Deserialize};
-use crate::{types::{AssetId, EpochMillis}, models::{Fund, Buy, Sell, FiatCurrency}};
+use crate::{types::{AssetId, EpochMillis}, models::{Fund, Buy, Sell, FiatCurrency}, utils::{now::Now, parse_option_string, parse_option_u16}};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum AssetType {
@@ -13,22 +15,18 @@ pub enum AssetType {
     RealState { name: String, deed_date: Option<String> },
 }
 
-fn parse_option_string(data: &JsonValue, key: &str) -> Option<String> {
-    if data[key].is_null() {
-        None
-    } else {
-        Some(data[key].to_string())
+impl fmt::Display for AssetType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match self {
+            AssetType::Gold { presentation, weight, purity, note } => "GOLD",
+            AssetType::Bitcoin { address, sats } => "BTC",
+            AssetType::Dogecoin { address, dogs } => "DOGE",
+            AssetType::Litecoin { address, lits } => "LTC",
+            AssetType::Ethereum { address, wei } => "ETH",
+            AssetType::RealState { name, deed_date } => "REAL_STATE"
+        })
     }
 }
-
-fn parse_option_u16(data: &JsonValue, key: &str) -> Option<u16> {
-    if data[key].is_null() {
-        None
-    } else {
-        Some(data[key].as_u16().unwrap())
-    }
-}
-
 
 impl AssetType {
     pub fn new(type_str: String, data: JsonValue) -> Self {
@@ -80,6 +78,15 @@ impl AssetType {
     }
 }
 
+pub struct AssetEvaluation {
+    asset_id: AssetId,
+    millisec_since_purchase: EpochMillis,
+    asset_type_str: String,
+    entrance_amount: u128,
+    now_amount: u128,
+    currency: FiatCurrency
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Asset {
     id: AssetId,
@@ -104,5 +111,20 @@ impl Asset {
         assert!(self.buy.is_none(), "Asset already has a Buy process.");
         let buy = Buy::new(settled_at, "fiat_cash".to_string(), amount, currency);
         self.buy = Some(buy);
+    }
+
+    fn get_entrance_amount(&self) -> u128 {
+        assert!(self.buy.is_none());
+    }
+
+    pub fn evaluate(&self, currency: FiatCurrency) -> AssetEvaluation {
+        AssetEvaluation {
+            asset_id: self.id,
+            millisec_since_purchase: Now::new().to_epoch_millis() - self.buy.expect("Asset without a Buy object.").settled_at,
+            asset_type_str: format!("{}", self.asset_type),
+            entrance_amount: self.get_entrance_amount(),
+            now_amount: u128,
+            currency: FiatCurrency
+        }
     }
 }

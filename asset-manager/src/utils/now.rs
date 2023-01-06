@@ -1,8 +1,7 @@
 use std::{time::{SystemTime, UNIX_EPOCH}, fmt};
 use crate::types::EpochMillis;
 
-use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime};
-use chrono::format::ParseError;
+use chrono::{Utc, NaiveDate};
 
 pub struct Now {
     nanosecs: u64
@@ -24,11 +23,20 @@ impl Now {
         }
     }
 
+    /// TODO: This converts a date to a timestamp at 13:00 hrs UTC / 07:00 hrs CST.
     pub fn new_from_datetime_str(datetime: &str, format: &str) -> Self {
-        let epoch_millis = DateTime::parse_from_str(
-            datetime,
-            format
-        ).unwrap().timestamp_millis() as u64;
+        let epoch_millis = if format == "%Y-%m-%d" {
+            let dt = NaiveDate::parse_from_str(datetime, format)
+                .unwrap()
+                .and_hms_milli_opt(13, 0, 0, 0)
+                .unwrap()
+                .and_local_timezone(Utc)
+                .unwrap();
+            dt.timestamp_millis() as EpochMillis
+        } else {
+            unimplemented!();
+        };
+
         Now::new_from_epoch_millis(epoch_millis)
     }
 

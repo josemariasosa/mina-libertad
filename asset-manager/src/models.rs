@@ -16,6 +16,7 @@ impl FromStr for FiatCurrency {
     type Err = ();
 
     fn from_str(input: &str) -> Result<FiatCurrency, Self::Err> {
+        println!("HERE: {}", input);
         let result = match normal_input_string(&input).as_str() {
             "MXN" => FiatCurrency::MXN,
             "USD" => FiatCurrency::USD,
@@ -43,7 +44,7 @@ impl fmt::Display for AppEnv {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Buy {
     transaction: Transaction,
-    settled_at: EpochMillis
+    pub settled_at: EpochMillis
 }
 
 impl Buy {
@@ -64,6 +65,14 @@ impl Buy {
         }
         
     }
+
+    pub(crate) fn get_transaction_amount_currency(&self) -> (u128, FiatCurrency) {
+        self.transaction.amount, self.transaction.
+    }
+
+    // pub(crate) fn get_settled_at(&self) -> EpochMillis {
+    //     self.settled_at
+    // }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
