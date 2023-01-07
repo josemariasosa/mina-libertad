@@ -85,9 +85,13 @@ impl App {
         let content = fs::read_to_string(file_path).expect("Error reading market file.");
         let mut _market_json = json::parse(&content).unwrap();
 
+        let price_sheet = self.price_sheet.clone();
         for asset in self.assets.iter() {
-            let snapshot = asset.get_market_price(Some(&self.price_sheet));
+            println!("{:?}", self.price_sheet);
+            let snapshot = asset.get_market_price(Some(price_sheet.clone()));
             self.latest_prices.insert(asset.id, snapshot);
+
+            println!("{:?}", self.latest_prices);
             
             // // TODO: unimplemented()
             // _market_json.push(serde_json::to_string(&snapshot).unwrap());

@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, fs};
 use std::str::FromStr;
 use serde::{Serialize, Deserialize};
 use crate::PRICE_SHEET_FILEPATH;
@@ -162,14 +162,16 @@ pub struct PriceSheet {
 
 impl Default for PriceSheet {
     fn default() -> Self {
-        let price_sheet = json::parse(&PRICE_SHEET_FILEPATH).unwrap();
+        println!("{}", &PRICE_SHEET_FILEPATH);
+        let content = fs::read_to_string(&PRICE_SHEET_FILEPATH).expect("Error reading prices mxn file.");
+        let price_sheet = json::parse(&content).unwrap();
         PriceSheet {
-            gold_gram_24k: parse_option_u64(&price_sheet, "gold_gram_24k"),
-            gold_gram_21k: parse_option_u64(&price_sheet, "gold_gram_21k"),
-            btc: parse_option_u64(&price_sheet, "btc"),
-            doge_4_decimals: parse_option_u64(&price_sheet, "doge_4_decimals"),
-            ltc: parse_option_u64(&price_sheet, "ltc"),
-            eth: parse_option_u64(&price_sheet, "eth"),
+            gold_gram_24k: parse_option_u64(&price_sheet, "GOLD-GRAM-24K"),
+            gold_gram_21k: parse_option_u64(&price_sheet, "GOLD-GRAM-21K"),
+            btc: parse_option_u64(&price_sheet, "BTC"),
+            doge_4_decimals: parse_option_u64(&price_sheet, "DOGE4DECIMALS"),
+            ltc: parse_option_u64(&price_sheet, "LTC"),
+            eth: parse_option_u64(&price_sheet, "ETH"),
             created_at: Now::new().to_epoch_millis()
         }
     }

@@ -20,7 +20,7 @@ use crate::{user::User, models::AppEnv, app::App};
 
 const ASSETS_FILEPATH: &str = "./files/dev/user.json";
 const MARKET_FILEPATH: &str = "./files/dev/market.json";
-const PRICE_SHEET_FILEPATH: &str = "./files/dev/naive_price_mxn.json";
+const PRICE_SHEET_FILEPATH: &str = "./files/dev/naive_prices_mxn.json";
 
 // use aes_gcm::{
 //     aead::{Aead, KeyInit, OsRng},
@@ -41,7 +41,10 @@ fn main() {
     let user = User::new("TEST", "admin123", AppEnv::Dev);
 
     let mut app = App::new(user);
+
+    println!("{:?}", app.price_sheet);
     app.import_user_file(ASSETS_FILEPATH);
+
 
     app.update_market(MARKET_FILEPATH);
 

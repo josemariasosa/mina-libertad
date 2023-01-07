@@ -78,6 +78,8 @@ impl AssetType {
     }
 
     fn naive_market_price(&self, use_price_sheet: PriceSheet) -> MarketSnapshot {
+        println!("{}", self);
+        println!("{:?}", use_price_sheet);
         let median = match &self {
             AssetType::Bitcoin { address, sats } => {
                 // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
@@ -87,41 +89,38 @@ impl AssetType {
                     10u128.pow(8)
                 )
             },
-            AssetType::Bitcoin { address, sats } => {
-                // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
+            AssetType::Gold { presentation, weight, purity, note }  => {
+                let weight = weight.as_ref().unwrap().parse::<u128>().unwrap();
+                let price = match purity.unwrap() {
+                    9999 => use_price_sheet.gold_gram_24k.unwrap(),
+                    9000 => use_price_sheet.gold_gram_21k.unwrap(),
+                    _ => unimplemented!()
+                };
+                proportional(price as u128, weight, 1_u128)
+            },
+            AssetType::Litecoin { address, lits } => {
                 proportional(
-                    use_price_sheet.btc.unwrap() as u128,
-                    sats.clone(),
+                    use_price_sheet.ltc.unwrap() as u128,
+                    lits.clone(),
                     10u128.pow(8)
                 )
-            },            AssetType::Bitcoin { address, sats } => {
-                // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
+            },
+            AssetType::Ethereum { address, wei } => {
                 proportional(
-                    use_price_sheet.btc.unwrap() as u128,
-                    sats.clone(),
-                    10u128.pow(8)
+                    use_price_sheet.eth.unwrap() as u128,
+                    wei.clone(),
+                    10u128.pow(18)
                 )
-            },            AssetType::Bitcoin { address, sats } => {
-                // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
+            },
+            AssetType::Dogecoin { address, dogs } => {
                 proportional(
-                    use_price_sheet.btc.unwrap() as u128,
-                    sats.clone(),
-                    10u128.pow(8)
+                    use_price_sheet.doge_4_decimals.unwrap() as u128,
+                    dogs.clone(),
+                    10u128.pow(10)
                 )
-            },            AssetType::Bitcoin { address, sats } => {
-                // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
-                proportional(
-                    use_price_sheet.btc.unwrap() as u128,
-                    sats.clone(),
-                    10u128.pow(8)
-                )
-            },            AssetType::Bitcoin { address, sats } => {
-                // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
-                proportional(
-                    use_price_sheet.btc.unwrap() as u128,
-                    sats.clone(),
-                    10u128.pow(8)
-                )
+            },
+            AssetType::RealState { name, deed_date } => {
+                2_000_000_u128
             },
         };
         MarketSnapshot::new(
@@ -132,7 +131,7 @@ impl AssetType {
             None,
             None,
             None,
-            median // TODO: import file
+            median as u64
         )
     }
 }
@@ -191,13 +190,13 @@ impl Asset {
             millisec_since_purchase: Now::get_millis_since(buy_settled_at),
             asset_type_str: format!("{}", self.asset_type),
             entrance_amount: self.get_entrance_amount(),
-            now_amount: 0, // TODO: First get the market update.
+            now_amount: self.get_market_price(Some(self.price_sheet)), // TODO: First get the market update.
             currency: self.owner_settings.fiat_currency.clone()
         }
     }
 
     // TODO: implement other ways to get the price
     pub fn get_market_price(&self, use_price_sheet: Option<PriceSheet>) -> MarketSnapshot {
-        self.asset_type.naive_market_price(use_price_sheet)
+        self.asset_type.naive_market_price(use_price_sheet.unwrap())
     }
 }
