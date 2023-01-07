@@ -3,7 +3,7 @@ use std::fmt;
 // use std::fmt;
 use json::JsonValue;
 use serde::{Serialize, Deserialize};
-use crate::{types::{AssetId, EpochMillis}, models::{Fund, Buy, Sell, FiatCurrency}, utils::{now::Now, parse_option_string, parse_option_u16}};
+use crate::{types::{AssetId, EpochMillis}, models::{Fund, Buy, Sell, FiatCurrency, MarketSnapshot, PriceSheet}, utils::{now::Now, parse_option_string, parse_option_u16, proportional}, user::UserSettings};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum AssetType {
@@ -76,8 +76,68 @@ impl AssetType {
         }
 
     }
+
+    fn naive_market_price(&self, use_price_sheet: PriceSheet) -> MarketSnapshot {
+        let median = match &self {
+            AssetType::Bitcoin { address, sats } => {
+                // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
+                proportional(
+                    use_price_sheet.btc.unwrap() as u128,
+                    sats.clone(),
+                    10u128.pow(8)
+                )
+            },
+            AssetType::Bitcoin { address, sats } => {
+                // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
+                proportional(
+                    use_price_sheet.btc.unwrap() as u128,
+                    sats.clone(),
+                    10u128.pow(8)
+                )
+            },            AssetType::Bitcoin { address, sats } => {
+                // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
+                proportional(
+                    use_price_sheet.btc.unwrap() as u128,
+                    sats.clone(),
+                    10u128.pow(8)
+                )
+            },            AssetType::Bitcoin { address, sats } => {
+                // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
+                proportional(
+                    use_price_sheet.btc.unwrap() as u128,
+                    sats.clone(),
+                    10u128.pow(8)
+                )
+            },            AssetType::Bitcoin { address, sats } => {
+                // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
+                proportional(
+                    use_price_sheet.btc.unwrap() as u128,
+                    sats.clone(),
+                    10u128.pow(8)
+                )
+            },            AssetType::Bitcoin { address, sats } => {
+                // (10k each btc) 10_000_00 * 3_7000_0000 / (magic) 100_000_000
+                proportional(
+                    use_price_sheet.btc.unwrap() as u128,
+                    sats.clone(),
+                    10u128.pow(8)
+                )
+            },
+        };
+        MarketSnapshot::new(
+            Now::new().to_epoch_millis(),
+            format!("{}", &self),
+            None,
+            FiatCurrency::MXN,
+            None,
+            None,
+            None,
+            median // TODO: import file
+        )
+    }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct AssetEvaluation {
     asset_id: AssetId,
     millisec_since_purchase: EpochMillis,
@@ -89,21 +149,23 @@ pub struct AssetEvaluation {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Asset {
-    id: AssetId,
+    pub id: AssetId,
     fund: Fund,
     asset_type: AssetType,
     buy: Option<Buy>,
     sell: Option<Sell>,
+    owner_settings: UserSettings
 }
 
 impl Asset {
-    pub fn new(id: AssetId, fund: Fund, asset_type: AssetType) -> Self {
+    pub fn new(id: AssetId, fund: Fund, asset_type: AssetType, owner_settings: UserSettings) -> Self {
         Asset {
             id,
             fund,
             asset_type,
             buy: None,
-            sell: None
+            sell: None,
+            owner_settings
         }
     }
 
@@ -113,18 +175,29 @@ impl Asset {
         self.buy = Some(buy);
     }
 
+    /// Entrance amount is the SINGLE total value the user paid. Expect fiat currancy.
     fn get_entrance_amount(&self) -> u128 {
-        assert!(self.buy.is_none());
+        assert!(self.buy.is_some());
+        self.buy
+            .as_ref()
+            .unwrap()
+            .get_entrance_amount(self.owner_settings.fiat_currency.clone())
     }
 
     pub fn evaluate(&self, currency: FiatCurrency) -> AssetEvaluation {
+        let buy_settled_at = self.buy.as_ref().expect("Asset without a Buy object.").settled_at;
         AssetEvaluation {
             asset_id: self.id,
-            millisec_since_purchase: Now::new().to_epoch_millis() - self.buy.expect("Asset without a Buy object.").settled_at,
+            millisec_since_purchase: Now::get_millis_since(buy_settled_at),
             asset_type_str: format!("{}", self.asset_type),
             entrance_amount: self.get_entrance_amount(),
-            now_amount: u128,
-            currency: FiatCurrency
+            now_amount: 0, // TODO: First get the market update.
+            currency: self.owner_settings.fiat_currency.clone()
         }
+    }
+
+    // TODO: implement other ways to get the price
+    pub fn get_market_price(&self, use_price_sheet: Option<PriceSheet>) -> MarketSnapshot {
+        self.asset_type.naive_market_price(use_price_sheet)
     }
 }

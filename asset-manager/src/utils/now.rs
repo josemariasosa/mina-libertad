@@ -18,9 +18,7 @@ impl Now {
     }
 
     pub fn new_from_epoch_millis(epoch_millis: EpochMillis) -> Self {
-        Self {
-            nanosecs: (epoch_millis * 1_000_000) as u64
-        }
+        Self { nanosecs: (epoch_millis * 1_000_000) as u64 }
     }
 
     /// TODO: This converts a date to a timestamp at 13:00 hrs UTC / 07:00 hrs CST.
@@ -38,6 +36,10 @@ impl Now {
         };
 
         Now::new_from_epoch_millis(epoch_millis)
+    }
+
+    pub fn get_millis_since(epoch_millis: EpochMillis) -> EpochMillis {
+        Now::new().to_epoch_millis() - epoch_millis
     }
 
     pub fn to_epoch_millis(&self) -> EpochMillis {

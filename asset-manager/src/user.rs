@@ -5,7 +5,7 @@ use std::path::Path;
 use serde::{Serialize, Deserialize};
 use crate::app::App;
 use crate::types::{UserName, HashString};
-use crate::models::AppEnv;
+use crate::models::{AppEnv, FiatCurrency};
 // use crate::errors::AppErrors;
 // use std::fs;
 // use std::path::Path;
@@ -125,4 +125,22 @@ impl User {
     //         }           
     //     }
     // }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct UserSettings {
+    /// Preferred fiat currency.
+    pub(crate) fiat_currency: FiatCurrency
+}
+
+impl UserSettings {
+    pub(crate) fn new(fiat_currency: FiatCurrency) -> Self {
+        UserSettings { fiat_currency }
+    }
+}
+
+impl Default for UserSettings {
+    fn default() -> Self {
+        Self::new( FiatCurrency::MXN )
+    }
 }

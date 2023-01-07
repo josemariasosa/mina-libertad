@@ -1,10 +1,10 @@
 use std::fs;
 use std::str::FromStr;
  
-use crate::models::{Fund, FiatCurrency};
-use crate::asset::{Asset, AssetType};
-use crate::types::FundName;
-use crate::user::User;
+use crate::models::{Fund, FiatCurrency, MarketSnapshot, PriceSheet};
+use crate::asset::{Asset, AssetType, AssetEvaluation};
+use crate::types::{FundName, AssetId};
+use crate::user::{User, UserSettings};
 use crate::utils::now::Now;
 use json::JsonValue;
 use serde::{Deserialize, Serialize};
@@ -13,18 +13,25 @@ use std::collections::HashMap;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct App {
     owner: User,
+    user_settings: UserSettings,
     next_asset_id: u32,
     pub funds: HashMap<FundName, Fund>,
     assets: Vec<Asset>,
+    pub price_sheet: PriceSheet,
+    /// TODO: key, String, is the asset_type!!!
+    latest_prices: HashMap<AssetId, MarketSnapshot>
 }
 
 impl App {
     pub(crate) fn new(owner: User) -> Self {
         App {
             owner,
+            user_settings: UserSettings::default(),
             next_asset_id: 0,
             funds: HashMap::new(),
             assets: Vec::new(),
+            price_sheet: PriceSheet::default(),
+            latest_prices: HashMap::new()
         }
     }
 
@@ -51,7 +58,8 @@ impl App {
             let mut new_asset = Asset::new(
                 self.next_asset_id,
                 fund.clone(),
-                asset_type
+                asset_type,
+                self.user_settings.clone()
             );
             self.next_asset_id += 1;
 
@@ -70,6 +78,19 @@ impl App {
                 new_asset.purchase(settled_at, amount, currency);
             }
             self.assets.push(new_asset);
+        }
+    }
+
+    pub(crate) fn update_market(&mut self, file_path: &str) {
+        let content = fs::read_to_string(file_path).expect("Error reading market file.");
+        let mut _market_json = json::parse(&content).unwrap();
+
+        for asset in self.assets.iter() {
+            let snapshot = asset.get_market_price(Some(&self.price_sheet));
+            self.latest_prices.insert(asset.id, snapshot);
+            
+            // // TODO: unimplemented()
+            // _market_json.push(serde_json::to_string(&snapshot).unwrap());
         }
     }
 
@@ -99,9 +120,9 @@ impl App {
 
     /// Asset Id | Type | Entrance | Now
     fn view_asset_eval(&self) {
-        let assets = self.assets.iter().map(|asset| asset.evaluate(FiatCurrency::MXN));
+        let assets: Vec<AssetEvaluation> = self.assets.iter().map(|asset| asset.evaluate(FiatCurrency::MXN)).collect();
 
-        println!("FRIDAY -> print the evaluated assets: {:?}", assets);
+        println!("FRIDAY -> print the evaluated assets: {:#?}", assets);
 
     }
 
